@@ -16,7 +16,11 @@ productRouter.post("/", async (req, res, next) => {
 
 productRouter.get("/", async (req, res, next) => {
   try {
-    const product = await ProductModel.findAll();
+    const query = {};
+    if (req.query.name) {
+      query.name = { [Op.iLike]: `${req.query.name}%` };
+    }
+    const product = await ProductModel.findAll({ where: { ...query } });
     res.status(200).send(product);
   } catch (error) {
     next(error);
