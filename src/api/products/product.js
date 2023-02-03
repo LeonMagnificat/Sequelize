@@ -1,13 +1,22 @@
 import express from "express";
 import createHttpError from "http-errors";
 import { Op } from "sequelize";
+import CategoryModel from "../category/model.js";
 import ProductModel from "./model.js";
+import productCategoryModel from "./productCategory.js";
 
 const productRouter = express.Router();
 
 productRouter.post("/", async (req, res, next) => {
   try {
     const addedProduct = await ProductModel.create(req.body);
+    if (req.body.categories) {
+      await productCategoryModel.bulkCreate(
+        req.body.categories.map((category) => {
+          return { categoryId: category, ProductId: addedProduct.id };
+        })
+      );
+    }
     res.status(200).send(addedProduct);
   } catch (error) {
     next(error);
@@ -20,7 +29,7 @@ productRouter.get("/", async (req, res, next) => {
     if (req.query.name) {
       query.name = { [Op.iLike]: `${req.query.name}%` };
     }
-    const product = await ProductModel.findAll({ where: { ...query } });
+    const product = await ProductModel.findAll({ include: [{ model: CategoryModel, attributes: ["name"], through: { attributes: [] } }] });
     res.status(200).send(product);
   } catch (error) {
     next(error);
@@ -52,6 +61,19 @@ productRouter.delete("/:productId", async (req, res, next) => {
     if (updatedRow === 1) {
       res.status(200).send({ message: "Product deleted successfully" });
     }
+  } catch (error) {
+    next(error);
+  }
+});
+
+productRouter.put("/:productId/categories", async (req, res, next) => {
+  try {
+    const productCategory = await productCategoryModel.create({
+      ProductId: req.params.productId,
+      categoryId: req.body.categories,
+    });
+
+    res.status(201).send(productCategory);
   } catch (error) {
     next(error);
   }
