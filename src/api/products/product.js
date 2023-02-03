@@ -2,6 +2,7 @@ import express from "express";
 import createHttpError from "http-errors";
 import { Op } from "sequelize";
 import CategoryModel from "../category/model.js";
+import ReviewModel from "../review/model.js";
 import ProductModel from "./model.js";
 import productCategoryModel from "./productCategory.js";
 
@@ -29,7 +30,7 @@ productRouter.get("/", async (req, res, next) => {
     if (req.query.name) {
       query.name = { [Op.iLike]: `${req.query.name}%` };
     }
-    const product = await ProductModel.findAll({ include: [{ model: CategoryModel, attributes: ["name"], through: { attributes: [] } }] });
+    const product = await ProductModel.findAll({ include: [{ model: CategoryModel, attributes: ["name"], through: { attributes: [] } }, { model: ReviewModel }] });
     res.status(200).send(product);
   } catch (error) {
     next(error);
